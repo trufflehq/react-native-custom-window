@@ -9,6 +9,7 @@
 #include "winrt/Windows.UI.ViewManagement.h"
 #include "winrt/Windows.ApplicationModel.Core.h"
 #include "winrt/Windows.ApplicationModel.Activation.h"
+#include <winrt/Windows.UI.Xaml.Media.h>
 
 
 using namespace winrt;
@@ -16,9 +17,12 @@ using namespace xaml;
 using namespace xaml::Controls;
 using namespace xaml::Navigation;
 
+
 using namespace Windows::UI;
 using namespace Windows::UI::ViewManagement;
 using namespace Windows::ApplicationModel::Core;
+using namespace Windows::UI::Core;
+using namespace Windows::UI::Xaml::Media;
 
 
 namespace TitleBar {
@@ -34,12 +38,16 @@ namespace TitleBar {
         }
 
         REACT_METHOD(EnableExtend, L"enableExtend");
-        void EnableExtend() noexcept
-        {
-            context.UIDispatcher().Post([] {
+        void EnableExtend(int reactTag) noexcept {
+            context.UIDispatcher().Post([reactTag, this] {
+                if (reactTag) {
+                    auto uiService = winrt::Microsoft::ReactNative::XamlUIService::FromContext(context.Handle());
+                    auto view = uiService.ElementFromReactTag(reactTag).as<winrt::Windows::UI::Xaml::UIElement>();                
+                    Window::Current().SetTitleBar(view);
+                }
 
-                CoreApplication::GetCurrentView().TitleBar().ExtendViewIntoTitleBar(true);
-
+                auto coreTitleBar = CoreApplication::GetCurrentView().TitleBar();
+                coreTitleBar.ExtendViewIntoTitleBar(true);
             });
         }
 
@@ -337,7 +345,7 @@ namespace TitleBar {
                 if (color == "yellowgreen") return Colors::YellowGreen();
             }
                 
-        }                
-
+        }
+        
     };
 }
