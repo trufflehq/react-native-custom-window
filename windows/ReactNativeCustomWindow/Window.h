@@ -11,7 +11,8 @@
 #include "winrt/Windows.UI.Xaml.Navigation.h"
 #include "winrt/Windows.UI.Xaml.Controls.h"
 #include "winrt/Windows.ApplicationModel.Core.h"
-
+#include <winrt/Windows.UI.Input.h>
+#include <winrt/Windows.UI.Xaml.Input.h>
 
 using namespace winrt;
 using namespace Windows::Foundation;
@@ -30,6 +31,8 @@ namespace WindowRN {
     struct WindowRNModule final {
 
         RN::ReactContext context;
+        
+        bool m_isPointerExitedListenerActive = false;
 
         REACT_INIT(Initialize, L"init");
         void Initialize(const RN::ReactContext& reactContext) noexcept
@@ -131,5 +134,40 @@ namespace WindowRN {
                 promise.Reject(RN::ReactError{ winrt::to_string(ex.message()).c_str() });
             }
         };
+        
+        REACT_EVENT(OnPointerExited, L"onPointerExited")
+        std::function<void(winrt::Microsoft::ReactNative::JSValueObject)> OnPointerExited;
+        
+        // onPointerExited returns dispose function
+        REACT_METHOD(ListenPointerExited, L"listenPointerExited")
+        void ListenPointerExited() noexcept
+        {          
+            context.UIDispatcher().Post([this] {
+                auto coreWindow = CoreWindow::GetForCurrentThread();
+                if (coreWindow != nullptr)
+                {
+                    if (!m_isPointerExitedListenerActive)
+                    {
+                        coreWindow.PointerExited({ this, &WindowRNModule::OnPointerExitedHandler });
+                        m_isPointerExitedListenerActive = true;
+                    }
+                }
+            });
+        }
+        
+        void OnPointerExitedHandler(CoreWindow const& sender, PointerEventArgs const& args) {
+            // get the current position of the pointer
+            auto pointerPosition = args.CurrentPoint().Position();
+            // get the current bounds of the window
+            auto windowBounds = Window::Current().Bounds();
+                    
+            winrt::Microsoft::ReactNative::JSValueObject params;
+            params["x"] = pointerPosition.X;
+            params["y"] = pointerPosition.Y;
+            params["windowWidth"] = windowBounds.Width;
+            params["windowHeight"] = windowBounds.Height;
+            
+            OnPointerExited(std::move(params));
+        }
     };
 }
