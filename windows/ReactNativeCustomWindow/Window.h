@@ -33,6 +33,7 @@ namespace WindowRN {
         RN::ReactContext context;
         
         bool m_isPointerExitedListenerActive = false;
+        bool m_isPointerEnteredListenerActive = false;
 
         REACT_INIT(Initialize, L"init");
         void Initialize(const RN::ReactContext& reactContext) noexcept
@@ -168,6 +169,41 @@ namespace WindowRN {
             params["windowHeight"] = windowBounds.Height;
             
             OnPointerExited(std::move(params));
+        }
+        
+        REACT_EVENT(OnPointerEntered, L"onPointerEntered")
+        std::function<void(winrt::Microsoft::ReactNative::JSValueObject)> OnPointerEntered;
+        
+        // onPointerEntered returns dispose function
+        REACT_METHOD(ListenPointerEntered, L"listenPointerEntered")
+        void ListenPointerEntered() noexcept
+        {          
+            context.UIDispatcher().Post([this] {
+                auto coreWindow = CoreWindow::GetForCurrentThread();
+                if (coreWindow != nullptr)
+                {
+                    if (!m_isPointerEnteredListenerActive)
+                    {
+                        coreWindow.PointerEntered({ this, &WindowRNModule::OnPointerEnteredHandler });
+                        m_isPointerEnteredListenerActive = true;
+                    }
+                }
+            });
+        }
+        
+        void OnPointerEnteredHandler(CoreWindow const& sender, PointerEventArgs const& args) {
+            // get the current position of the pointer
+            auto pointerPosition = args.CurrentPoint().Position();
+            // get the current bounds of the window
+            auto windowBounds = Window::Current().Bounds();
+                    
+            winrt::Microsoft::ReactNative::JSValueObject params;
+            params["x"] = pointerPosition.X;
+            params["y"] = pointerPosition.Y;
+            params["windowWidth"] = windowBounds.Width;
+            params["windowHeight"] = windowBounds.Height;
+            
+            OnPointerEntered(std::move(params));
         }
     };
 }
