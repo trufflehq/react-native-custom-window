@@ -135,6 +135,37 @@ namespace WindowRN {
                 promise.Reject(RN::ReactError{ winrt::to_string(ex.message()).c_str() });
             }
         };
+
+        REACT_METHOD(SetCursor, L"setCursor")
+        void SetCursor(hstring cursorName) noexcept
+        {
+            context.UIDispatcher().Post([cursorName] {
+                winrt::Windows::UI::Core::CoreWindow::GetForCurrentThread().PointerCursor(
+                        winrt::Windows::UI::Core::CoreCursor(
+                            GetCursorType(cursorName),
+                            0
+                        )
+                    );
+            });
+        }
+
+        static CoreCursorType GetCursorType(hstring cursorName) noexcept
+        {
+            if (cursorName == L"arrow") return CoreCursorType::Arrow;
+            if (cursorName == L"cross") return CoreCursorType::Cross;
+            if (cursorName == L"hand") return CoreCursorType::Hand;
+            if (cursorName == L"help") return CoreCursorType::Help;
+            if (cursorName == L"ibeam") return CoreCursorType::IBeam;
+            if (cursorName == L"sizeAll") return CoreCursorType::SizeAll;
+            if (cursorName == L"sizeNortheastSouthwest") return CoreCursorType::SizeNortheastSouthwest;
+            if (cursorName == L"sizeNorthSouth") return CoreCursorType::SizeNorthSouth;
+            if (cursorName == L"sizeNorthwestSoutheast") return CoreCursorType::SizeNorthwestSoutheast;
+            if (cursorName == L"sizeWestEast") return CoreCursorType::SizeWestEast;
+            if (cursorName == L"universalNo") return CoreCursorType::UniversalNo;
+            if (cursorName == L"upArrow") return CoreCursorType::UpArrow;
+            if (cursorName == L"wait") return CoreCursorType::Wait;
+            return CoreCursorType::Arrow;
+        }
         
         REACT_EVENT(OnPointerExited, L"onPointerExited")
         std::function<void(winrt::Microsoft::ReactNative::JSValueObject)> OnPointerExited;
