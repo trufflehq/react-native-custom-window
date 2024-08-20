@@ -223,18 +223,41 @@ namespace WindowRN {
         }
         
         void OnPointerEnteredHandler(CoreWindow const& sender, PointerEventArgs const& args) {
-            // get the current position of the pointer
-            auto pointerPosition = args.CurrentPoint().Position();
-            // get the current bounds of the window
-            auto windowBounds = Window::Current().Bounds();
-                    
-            winrt::Microsoft::ReactNative::JSValueObject params;
-            params["x"] = pointerPosition.X;
-            params["y"] = pointerPosition.Y;
-            params["windowWidth"] = windowBounds.Width;
-            params["windowHeight"] = windowBounds.Height;
-            
-            OnPointerEntered(std::move(params));
+            try {
+                // Check if args is valid
+                if (!args) {
+                    throw std::runtime_error("PointerEventArgs is null");
+                }
+
+                // Get the current point and check if it is valid
+                auto currentPoint = args.CurrentPoint();
+                if (!currentPoint) {
+                    throw std::runtime_error("CurrentPoint is null");
+                }
+
+                // Get the current position of the pointer
+                auto pointerPosition = currentPoint.Position();
+
+                // Get the current bounds of the window
+                auto windowBounds = Window::Current().Bounds();
+
+                winrt::Microsoft::ReactNative::JSValueObject params;
+                params["x"] = pointerPosition.X;
+                params["y"] = pointerPosition.Y;
+                params["windowWidth"] = windowBounds.Width;
+                params["windowHeight"] = windowBounds.Height;
+
+                // Only call the event if it is defined, otherwise it will throw an exception
+                if (OnPointerEntered) {
+                    OnPointerEntered(std::move(params));
+                }
+            } catch (const std::exception& ex) {
+                // Log the exception message
+                OutputDebugStringA(ex.what());
+            } catch (...) {
+                // Catch any other exceptions
+                OutputDebugStringA("An unknown error occurred in OnPointerEnteredHandler");
+            }
         }
     };
 }
